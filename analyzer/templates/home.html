@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emocjonalny Analizator Tekstu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --border-color: #e5e7eb;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px; /* Szerszy kontener żeby zmieścić wykres */
+            margin: 40px auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        header h1 { font-weight: 600; font-size: 2.2rem; }
+        header p { opacity: 0.9; font-weight: 300; }
+
+        .content-wrapper { padding: 30px; }
+
+        /* Formularz */
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-family: inherit;
+            min-height: 120px;
+            margin-top: 10px;
+            outline: none;
+            font-size: 1rem;
+        }
+        textarea:focus { border-color: var(--primary-color); }
+
+        .btn-analyze {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+        .btn-analyze:hover { background-color: var(--primary-hover); transform: translateY(-1px); }
+
+        /* Wyniki - Grid Layout */
+        .results-section {
+            margin-top: 40px;
+            border-top: 2px dashed var(--border-color);
+            padding-top: 30px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Tekst szerszy, wykres węższy */
+            gap: 30px;
+        }
+
+        h2 {
+            grid-column: 1 / -1;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary-color);
+            padding-left: 15px;
+        }
+
+        .analyzed-text {
+            line-height: 2;
+            font-size: 1.05rem;
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sentence-badge {
+            padding: 2px 5px;
+            margin: 0 2px;
+            border-radius: 4px;
+            border-bottom: 3px solid;
+            cursor: help;
+        }
+        .sentence-badge:hover { filter: brightness(0.95); }
+
+        /* Responsywność */
+        @media (max-width: 768px) {
+            .results-grid { grid-template-columns: 1fr; } /* Na telefonie jeden pod drugim */
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Emotion Analyzer</h1>
+        <p>Wykrywanie ładunku emocjonalnego przy użyciu Machine Learning</p>
+    </header>
+
+    <div class="content-wrapper">
+        <form method="post">
+            {% csrf_token %}
+            <label style="font-weight: 600;">Wprowadź tekst do analizy (angielski):</label>
+            {{ form.text }}
+            <button type="submit" class="btn-analyze">Rozpocznij Analizę ✨</button>
+        </form>
+
+        {% if result %}
+        <section class="results-section">
+            <div class="results-grid">
+                
+                <div>
+                    <h2>Wyniki Analizy</h2>
+                    <div class="analyzed-text">
+                        {% for sentence in result.sentences %}
+                            <span class="sentence-badge"
+                                  style="background-color: {{ sentence.color }}33; border-color: {{ sentence.color }};"
+                                  title="Emocja: {{ sentence.emotion|upper }} ({{ sentence.confidence }}%)">
+                                {{ sentence.text }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: #6b7280;">Rozkład Emocji</h3>
+                    <canvas id="emotionChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <script>
+            const ctx = document.getElementById('emotionChart').getContext('2d');
+            
+            // Dane z backendu (Django)
+            const labels = {{ chart_labels|safe }};
+            const data = {{ chart_data|safe }};
+            const colors = {{ chart_colors|safe }};
+
+            new Chart(ctx, {
+                type: 'doughnut', // Typ wykresu: pierścieniowy
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 20 }
+                        }
+                    },
+                    cutout: '60%', // Grubość pierścienia
+                }
+            });
+        </script>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>

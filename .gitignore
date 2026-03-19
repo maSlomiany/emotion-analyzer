@@ -1,0 +1,30 @@
+# Środowiska w
+irtualne
+.venv/
+.venv-1/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Baza danych Django
+db.sqlite3
+
+# Pliki z raportami testów
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Specyficzne dla macOS
+.DS_Store
+**/.DS_Store
+
+# Surowe zbiory danych
+data/
+*.tsv
+*.csv
+
+emotion_model.joblib

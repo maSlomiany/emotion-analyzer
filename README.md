@@ -11,7 +11,7 @@ System przyjmuje surowy tekst od użytkownika, przetwarza go z wykorzystaniem te
 ## Główne funkcjonalności
 
 * **Analiza w czasie rzeczywistym:** Zastosowanie wzorca projektowego **Singleton** dla serwisu ML zapewnia ładowanie modelu do pamięci RAM tylko raz przy starcie serwera, co drastycznie skraca czas odpowiedzi.
-* ** NLP (spaCy):** Segmentacja zdań z zachowaniem słów kluczowych dla negacji.
+* **NLP (spaCy):** Segmentacja zdań z zachowaniem słów kluczowych dla negacji.
 * **Interaktywna wizualizacja wyników:** 
 * * **Heatmapa tekstu:** Dynamiczne kolorowanie poszczególnych zdań w oparciu o wykrytą emocję.
   * **Wykres pierścieniowy:** Wygenerowany przy użyciu `Chart.js` wykres prezentujący zagregowany rozkład emocji w całej wypowiedzi.
